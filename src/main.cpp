@@ -1,7 +1,7 @@
 ////pinout notes
 //Button
 // up 23
-// center 19
+// enter 19
 // left 18
 // down 4
 // right 13
@@ -24,7 +24,15 @@
 #endif
 
 #include <Arduino.h>
+#include <U8g2lib.h>
 #include "BTS7960.h"
+
+// butttons
+#define btn_up 23
+#define btn_enter 19
+#define btn_left 18
+#define btn_down 4
+#define btn_right 13
 
 // BTS7960
 const uint8_t EN_L = 33;
@@ -48,15 +56,59 @@ int pauseBetweenStrokes = 0; // pause between strokes
 int strokeSpeed = 200; // speed of the stroke
 int returnSpeed = 50; // speed when resetting the motor position
 
+// Display Type
+  U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+
+void button() {
+  if (digitalRead(btn_up) == LOW){
+    u8g2.clearBuffer();
+    u8g2.drawStr(0,40,"up");
+    u8g2.sendBuffer();
+  } 
+  else if (digitalRead(btn_down) == LOW){
+    u8g2.clearBuffer();
+    u8g2.drawStr(0,40,"down");
+    u8g2.sendBuffer();
+  } 
+  else if (digitalRead(btn_right) == LOW){
+    u8g2.clearBuffer();
+    u8g2.drawStr(0,40,"right");
+    u8g2.sendBuffer();
+  }
+  else if (digitalRead(btn_left) == LOW){
+    u8g2.clearBuffer();
+    u8g2.drawStr(0,40,"left");
+    u8g2.sendBuffer();
+  }
+    else if (digitalRead(btn_enter) == LOW){
+    u8g2.clearBuffer();
+    u8g2.drawStr(0,40,"enter");
+    u8g2.sendBuffer();
+  }
+}
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  //buttons
+  pinMode(btn_enter, INPUT);
+  pinMode(btn_up, INPUT);
+  pinMode(btn_down, INPUT);
+  pinMode(btn_left, INPUT);
+  pinMode(btn_right, INPUT);
+
+  u8g2.begin();
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_t0_11b_mf);
+  u8g2.drawStr(2,30,"Hello World!");
+  u8g2.sendBuffer();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   currentMillis = millis();
+  button();
+
 
   motorController.Enable();
   int currentSum = 0;
