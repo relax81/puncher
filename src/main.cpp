@@ -1,3 +1,18 @@
+////pinout notes
+//Button
+// up 23
+// center 19
+// left 18
+// down 4
+// right 13
+
+//// BTS7960
+// sense pins 35
+// en_L 33
+// en_R 25
+// pwm_L 27
+// pwm_R 14
+
 // activate deactivate serial output for debugging
 #define DEBUG 1
 #if DEBUG == 1
@@ -11,19 +26,28 @@
 #include <Arduino.h>
 #include "BTS7960.h"
 
-
+// BTS7960
 const uint8_t EN_L = 33;
 const uint8_t EN_R = 25;
-const uint8_t L_PWM = 26;
-const uint8_t R_PWM = 15;
-const uint8_t R_IS = 34;
+const uint8_t L_PWM = 27;
+const uint8_t R_PWM = 14;
+const uint8_t R_IS = 35; // unused - parallel with 35 
 const uint8_t L_IS = 35;
-
 BTS7960 motorController(EN_L, EN_R, L_PWM, R_PWM, L_IS, R_IS);
 
+// variables
+unsigned long currentMillis = 0;
+unsigned long elapsedMillis = 0;
+int readingDelay = 0; // reading delay after enable to ignore inrush current
 bool motorStopped = false;
-int reading = 0;
+int reading = 0; // current reading
+int currentSum = 0; // sum of current readings
 float averageCurrent = 0;
+int strokes = 0; // number of strokes
+int pauseBetweenStrokes = 0; // pause between strokes
+int strokeSpeed = 200; // speed of the stroke
+int returnSpeed = 50; // speed when resetting the motor position
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -32,29 +56,25 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  currentMillis = millis();
+
   motorController.Enable();
-  int speed = 200;
   int currentSum = 0;
 
   if (motorStopped == false) {
-    speed = 1000;
-    motorController.TurnLeft(speed);
+    motorController.TurnLeft(strokeSpeed);
     delay(200);
     }
   else if (motorStopped == true)
     {
       motorController.Stop();
-      debugln("stopped");
-      speed = 50;
-      debug("speed = ");
-      debugln(speed);
       delay(100);
       motorController.Enable();
-      motorController.TurnRight(speed);
+      motorController.TurnRight(returnSpeed);
       debugln("motorcontroler right turn enabled");
-      delay(500);
-      debugln("motorcontroller right turn stopped");
+      delay(3000);
       motorController.Stop();
+      debugln("motorcontroller right turn stopped");
       delay(5000);
       motorStopped = false;
     }
@@ -69,7 +89,7 @@ void loop() {
 
   // int reading = analogRead(L_IS);
 
-  if (averageCurrent > 1000 && motorStopped == false)
+  if (averageCurrent > 500 && motorStopped == false)
     {
       motorStopped = true;
       debugln("current sense triggered !!!!!!!!!!!!!!");
