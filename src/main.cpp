@@ -68,14 +68,16 @@ bool buttonEnter = false;
 #define normalFont u8g2_font_t0_11b_mf
 #define settingsFont u8g2_font_NokiaSmallBold_tf
 // menu
-int settingsSelect = 1;
 int menuLevel = 1;
+int Settings_Selected = 1;
 const int MainMenuNumItems = 3; // number of items in the list 
 const int MainMenuMaxItemLength = 20; // maximum characters for the item name
 char MainMenuItems [MainMenuNumItems] [MainMenuMaxItemLength] = {"Start","Settings","Info"};
 int MainMenu_Selected = 0;
 int MainMenu_Previous;
 int MainMenu_Next;
+
+
 
 
 // Display Type
@@ -111,14 +113,14 @@ void readButtonState() {
 
     case 11:
       if (buttonDown) {
-        if (settingsSelect < 6) {
-        settingsSelect++;
+        if (Settings_Selected < 6) {
+        Settings_Selected++;
         delay(100);
         }
       }
       if (buttonUp) {
-        if (settingsSelect > 1) {
-        settingsSelect--;
+        if (Settings_Selected > 1) {
+        Settings_Selected--;
         delay(100);
         }
       } 
@@ -126,13 +128,82 @@ void readButtonState() {
         menuLevel = 1;
         delay(100);
       }
-
-      if (buttonLeft){
-
+      if (buttonLeft) {
+        switch (Settings_Selected) {
+          case 1:
+            if (strokeSpeed > 0) {
+            strokeSpeed--;
+            delay(20);
+            }
+            break;
+          case 2:
+            if (returnSpeed >0) {
+          returnSpeed--;
+          delay(20);
+            }
+            break;
+          case 3:
+            if (strokeCurrentLimit > 0) {
+            strokeCurrentLimit--;
+            }
+            break;
+          case 4:
+          if (returnCurrentLimit > 0) {
+            returnCurrentLimit--;
+            }
+            break;
+          case 5:
+          if (strokePause > 0) {
+            strokePause--;
+            delay(100);
+            }
+            break;
+          case 6:
+          if (startDelay > 0) {
+            startDelay--;
+            delay(100);
+            }
+            break;
+        }
       }
 
-      if (buttonRight){
-        
+      if (buttonRight) {
+        switch (Settings_Selected) {
+          case 1:
+            if (strokeSpeed < 255) {
+            strokeSpeed++;
+            delay(20);
+            }
+            break;
+          case 2:
+            if (returnSpeed < 255) {
+          returnSpeed++;
+          delay(20);
+            }
+            break;
+          case 3:
+            if (strokeCurrentLimit < 2000) {
+            strokeCurrentLimit++;
+            }
+            break;
+          case 4:
+          if (returnCurrentLimit < 2000) {
+            returnCurrentLimit++;
+            }
+            break;
+          case 5:
+          if (strokePause < 255) {
+            strokePause++;
+            delay(100);
+            }
+            break;
+          case 6:
+          if (startDelay < 255) {
+            startDelay++;
+            delay(100);
+            }
+            break;
+        }
       }
 
       break;
@@ -224,7 +295,7 @@ void displayMenuSettings() {
   u8g2.print(startDelay);
   
 
-  switch (settingsSelect) {
+  switch (Settings_Selected) {
     case 1: 
       u8g2.drawStr(120,8,"*");
       break;
