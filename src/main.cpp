@@ -51,65 +51,54 @@ bool motorStopped = false;
 int reading = 0; // current reading
 int currentSum = 0; // sum of current readings
 float averageCurrent = 0;
-int strokes = 0; // number of strokes
-int pauseBetweenStrokes = 0; // pause between strokes
-int strokeSpeed = 200; // speed of the stroke
-int returnSpeed = 50; // speed when resetting the motor position
+int startDelay = 5; // start delay in seconds
+int strokes = 1; // number of strokes
+int strokePause = 8; // pause between strokes in seconds
+int strokeSpeed = 150; // speed of the stroke pwm 0-255
+int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
+int strokeCurrentLimit = 0; // current threshold to stop motor during stroke
+int returnCurrentLimit = 0; // current threshold to stop motor during return
+// buttons
+bool buttonLeft = false;
+bool buttonRight = false;
+bool buttonUp = false;
+bool buttonDown = false;
+bool buttonEnter = false;
+// fonts
+#define normalFont u8g2_font_t0_11b_mf
+#define settingsFont u8g2_font_NokiaSmallBold_tf
+// menu
+int settingsSelect = 1;
+int menuLevel = 2;
+
 
 // Display Type
   U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
-void button() {
-  if (digitalRead(btn_up) == LOW){
-    u8g2.clearBuffer();
-    u8g2.drawStr(0,40,"up");
-    u8g2.sendBuffer();
+void readButtonState() {
+ buttonLeft = digitalRead(btn_left) == LOW;
+ buttonRight = digitalRead(btn_right) == LOW;
+ buttonUp = digitalRead(btn_up) == LOW;
+ buttonDown = digitalRead(btn_down) == LOW;
+ buttonEnter = digitalRead(btn_enter) == LOW;
+
+ if (menuLevel == 2) {
+  if (buttonDown) {
+    if (settingsSelect < 6) {
+    settingsSelect++;
+    delay(100);
+    }
+  }
+  else if (buttonUp) {
+    if (settingsSelect > 1) {
+    settingsSelect--;
+    delay(100);
+    }
   } 
-  else if (digitalRead(btn_down) == LOW){
-    u8g2.clearBuffer();
-    u8g2.drawStr(0,40,"down");
-    u8g2.sendBuffer();
-  } 
-  else if (digitalRead(btn_right) == LOW){
-    u8g2.clearBuffer();
-    u8g2.drawStr(0,40,"right");
-    u8g2.sendBuffer();
-  }
-  else if (digitalRead(btn_left) == LOW){
-    u8g2.clearBuffer();
-    u8g2.drawStr(0,40,"left");
-    u8g2.sendBuffer();
-  }
-    else if (digitalRead(btn_enter) == LOW){
-    u8g2.clearBuffer();
-    u8g2.drawStr(0,40,"enter");
-    u8g2.sendBuffer();
-  }
+   }
 }
 
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  //buttons
-  pinMode(btn_enter, INPUT);
-  pinMode(btn_up, INPUT);
-  pinMode(btn_down, INPUT);
-  pinMode(btn_left, INPUT);
-  pinMode(btn_right, INPUT);
-
-  u8g2.begin();
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_t0_11b_mf);
-  u8g2.drawStr(2,30,"Hello World!");
-  u8g2.sendBuffer();
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  currentMillis = millis();
-  button();
-
-
+void strokeRoutine() {
   motorController.Enable();
   int currentSum = 0;
 
@@ -152,4 +141,95 @@ void loop() {
   debug("averageCurrent: ");
   debugln(averageCurrent);
   delay(100);
+}
+
+void displayMenu() {
+  u8g2.clearBuffer();
+  u8g2.drawHLine(0,12,128);
+  u8g2.drawStr(47,8, "Spanky");
+  u8g2.drawFrame(10,31,108,19);
+  u8g2.drawStr(38,24,"Settings");
+  u8g2.drawStr(38,44,"Settings");
+  u8g2.drawStr(38,64,"Settings");
+  u8g2.sendBuffer();
+}
+
+void displayMenuSettings() {
+  u8g2.clearBuffer();
+  u8g2.drawVLine(78, 0, 64);
+  u8g2.setFont(settingsFont);
+  u8g2.drawStr(0,8,"stroke Speed");
+  u8g2.drawStr(0,18,"return Speed");
+  u8g2.drawStr(0,28,"stroke Limit");
+  u8g2.drawStr(0,38,"return Limit");
+  u8g2.drawStr(0,48,"stroke pause");
+  u8g2.drawStr(0,58,"start delay");
+
+  u8g2.setCursor(90,8);
+  u8g2.print(strokeSpeed);
+  u8g2.setCursor(90,18);
+  u8g2.print(returnSpeed);
+  u8g2.setCursor(90,28);
+  u8g2.print(strokeCurrentLimit);
+  u8g2.setCursor(90,38);
+  u8g2.print(returnCurrentLimit);
+  u8g2.setCursor(90,48);
+  u8g2.print(strokePause);
+  u8g2.setCursor(90,58);
+  u8g2.print(startDelay);
+  
+
+  switch (settingsSelect) {
+    case 1: 
+      u8g2.drawStr(120,8,"*");
+      break;
+    case 2: 
+      u8g2.drawStr(120,18,"*");
+      break;
+    case 3: 
+      u8g2.drawStr(120,28,"*");
+      break;
+    case 4: 
+      u8g2.drawStr(120,38,"*");
+      break;
+    case 5: 
+      u8g2.drawStr(120,48,"*");
+      break;
+    case 6: 
+      u8g2.drawStr(120,58,"*");
+      break;
+    default:
+      break;
+  }
+
+  u8g2.sendBuffer();
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  //buttons
+  pinMode(btn_enter, INPUT);
+  pinMode(btn_up, INPUT);
+  pinMode(btn_down, INPUT);
+  pinMode(btn_left, INPUT);
+  pinMode(btn_right, INPUT);
+
+  u8g2.begin();
+  u8g2.clearBuffer();
+  u8g2.setFont(normalFont);
+  u8g2.drawStr(35,40,"Setup done");
+  u8g2.sendBuffer();
+  delay(1000);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  currentMillis = millis();
+  readButtonState();
+  // strokeRoutine();
+  // displayMenu();
+  displayMenuSettings();
+
+
 }
