@@ -69,7 +69,13 @@ bool buttonEnter = false;
 #define settingsFont u8g2_font_NokiaSmallBold_tf
 // menu
 int settingsSelect = 1;
-int menuLevel = 2;
+int menuLevel = 1;
+const int MainMenuNumItems = 3; // number of items in the list 
+const int MainMenuMaxItemLength = 20; // maximum characters for the item name
+char MainMenuItems [MainMenuNumItems] [MainMenuMaxItemLength] = {"Start","Settings","Info"};
+int MainMenu_Selected = 0;
+int MainMenu_Previous;
+int MainMenu_Next;
 
 
 // Display Type
@@ -82,20 +88,56 @@ void readButtonState() {
  buttonDown = digitalRead(btn_down) == LOW;
  buttonEnter = digitalRead(btn_enter) == LOW;
 
- if (menuLevel == 2) {
-  if (buttonDown) {
-    if (settingsSelect < 6) {
-    settingsSelect++;
-    delay(100);
-    }
+
+  switch (menuLevel) {
+    case 1:
+        if (buttonUp) {
+          if (MainMenu_Selected < MainMenuNumItems - 1) {
+            MainMenu_Selected++;
+            delay(100);
+            }
+          } 
+        if (buttonDown) {
+          if (MainMenu_Selected > 0) {
+            MainMenu_Selected--;
+            delay(100);
+            }
+          }
+        if (buttonEnter){
+          menuLevel = MainMenu_Selected + 10;
+          delay(100);
+        }
+      break;
+
+    case 11:
+      if (buttonDown) {
+        if (settingsSelect < 6) {
+        settingsSelect++;
+        delay(100);
+        }
+      }
+      if (buttonUp) {
+        if (settingsSelect > 1) {
+        settingsSelect--;
+        delay(100);
+        }
+      } 
+      if (buttonEnter) {
+        menuLevel = 1;
+        delay(100);
+      }
+
+      if (buttonLeft){
+
+      }
+
+      if (buttonRight){
+        
+      }
+
+      break;
   }
-  else if (buttonUp) {
-    if (settingsSelect > 1) {
-    settingsSelect--;
-    delay(100);
-    }
-  } 
-   }
+
 }
 
 void strokeRoutine() {
@@ -144,13 +186,16 @@ void strokeRoutine() {
 }
 
 void displayMenu() {
+  MainMenu_Previous = (MainMenu_Selected - 1);
+  MainMenu_Next = (MainMenu_Selected + 1);
+
   u8g2.clearBuffer();
   u8g2.drawHLine(0,12,128);
   u8g2.drawStr(47,8, "Spanky");
   u8g2.drawFrame(10,31,108,19);
-  u8g2.drawStr(38,24,"Settings");
-  u8g2.drawStr(38,44,"Settings");
-  u8g2.drawStr(38,64,"Settings");
+  u8g2.drawStr(38,24,MainMenuItems[MainMenu_Previous]);
+  u8g2.drawStr(38,44,MainMenuItems[MainMenu_Selected]);
+  u8g2.drawStr(38,64,MainMenuItems[MainMenu_Next]);
   u8g2.sendBuffer();
 }
 
@@ -228,8 +273,22 @@ void loop() {
   currentMillis = millis();
   readButtonState();
   // strokeRoutine();
-  // displayMenu();
-  displayMenuSettings();
+
+  // Display selected menu
+  switch (menuLevel) {
+    case 1:
+      displayMenu();
+      break;
+    
+    case 11: 
+      displayMenuSettings();
+      break;
+    
+    default:
+      displayMenu();
+      menuLevel = 1;
+      break;
+  }
 
 
 }
