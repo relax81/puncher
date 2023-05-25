@@ -45,19 +45,22 @@ BTS7960 motorController(EN_L, EN_R, L_PWM, R_PWM, L_IS, R_IS);
 
 // variables
 unsigned long currentMillis = 0;
-unsigned long elapsedMillis = 0;
-int readingDelay = 0; // reading delay after enable to ignore inrush current
+unsigned long previousMillis = 0;
+unsigned long startCurrentMeasuringDelay = 100; // milliseconds
 bool motorStopped = false;
+bool stroking = false;
+bool returning = false;
 int reading = 0; // current reading
 int currentSum = 0; // sum of current readings
 float averageCurrent = 0;
 int startDelay = 5; // start delay in seconds
-int strokes = 1; // number of strokes
+int amountOfStrokes = 1; // number of strokes
 int strokePause = 8; // pause between strokes in seconds
 int strokeSpeed = 150; // speed of the stroke pwm 0-255
 int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
-int strokeCurrentLimit = 0; // current threshold to stop motor during stroke
-int returnCurrentLimit = 0; // current threshold to stop motor during return
+int strokeCurrentLimit = 500; // current threshold to stop motor during stroke
+int returnCurrentLimit = 300; // current threshold to stop motor during return
+bool running = false;
 // buttons
 bool buttonLeft = false;
 bool buttonRight = false;
@@ -91,6 +94,9 @@ void readButtonState() {
  buttonDown = digitalRead(btn_down) == LOW;
  buttonEnter = digitalRead(btn_enter) == LOW;
 
+void strokeRoutine();
+void stroke();
+void returnMotor();
 
   switch (menuLevel) {
     case 1:
@@ -114,14 +120,14 @@ void readButtonState() {
 
     case 10:
         if (buttonRight) {
-          if ((strokes < 255) && (StartMenu_Selected == 1)) {
-          strokes++;
+          if ((amountOfStrokes < 255) && (StartMenu_Selected == 1)) {
+          amountOfStrokes++;
           }
           delay(50);
         }
         if (buttonLeft) {
-          if ((strokes > 1) && (StartMenu_Selected == 1)) {
-          strokes--;
+          if ((amountOfStrokes > 1) && (StartMenu_Selected == 1)) {
+          amountOfStrokes--;
           }
           delay(50);
         }
@@ -140,7 +146,7 @@ void readButtonState() {
         if (buttonEnter) {
           switch (StartMenu_Selected) {
             case 1:
-            strokes = 1;
+            amountOfStrokes = 1;
             break;
             
             case 2:
@@ -149,11 +155,21 @@ void readButtonState() {
 
             case 3:
             // start stroking
+            menuLevel = 20;
+            // delay(startDelay * 1000);
+            strokeRoutine();
             break;
             delay(300);
           }
         }
         break; 
+
+    case 20:
+      if (buttonEnter) {
+        menuLevel = 1;
+        running = false;
+        delay(500);
+      }
 
     case 11:
       if (buttonDown) {
@@ -256,43 +272,86 @@ void readButtonState() {
 
 }
 
-void strokeRoutine() {
+void returnMotor() {
+  debugln("returnMotor function running");
   motorController.Enable();
-  int currentSum = 0;
-
-  if (motorStopped == false) {
-    motorController.TurnLeft(strokeSpeed);
+  motorController.TurnRight(returnSpeed);
+  delay(startCurrentMeasuringDelay);
+  if (motorController.CurrentSenseLeft() > returnCurrentLimit){
+    debugln("return current limit triggered");
+    motorController.Stop();
     delay(200);
-    }
-  else if (motorStopped == true)
-    {
-      motorController.Stop();
-      delay(100);
-      motorController.Enable();
-      motorController.TurnRight(returnSpeed);
-      debugln("motorcontroler right turn enabled");
-      delay(3000);
-      motorController.Stop();
-      debugln("motorcontroller right turn stopped");
-      delay(5000);
-      motorStopped = false;
-    }
+    returning = false;
+  }
+}
 
-  // take 10 readings and add them up
-  for (int i = 0; i < 2; i++) {
-    reading = motorController.CurrentSenseLeft();
-    currentSum += reading;
+void stroke() {
+  debugln("stroke function running");
+  motorController.Enable();
+  motorController.TurnLeft(strokeSpeed);
+  delay(startCurrentMeasuringDelay);
+  if (motorController.CurrentSenseLeft() > strokeCurrentLimit) {
+    debugln("stroke current limit triggered");
+    motorController.Stop();
+    amountOfStrokes--;
+    delay(200);
+    stroking = false;
+    returnMotor();
     }
-  // calculate the average
-  averageCurrent = (float) currentSum / 2;
+  }
 
-  // int reading = analogRead(L_IS);
+void strokeRoutine() {
+  if ((amountOfStrokes > 0) && returning == false) {
+    stroking = true;
+    stroke();
+  }
 
-  if (averageCurrent > 500 && motorStopped == false)
-    {
-      motorStopped = true;
-      debugln("current sense triggered !!!!!!!!!!!!!!");
-    }
+  if (amountOfStrokes == 0) {
+    motorController.Stop();
+    running = false;
+    menuLevel = 1;
+  }
+
+
+
+  // int currentSum = 0;
+
+
+
+  // if ((motorStopped == false) && (amountOfStrokes > 0)) {
+  //   motorController.TurnLeft(strokeSpeed);
+  //   amountOfStrokes--;
+  //   delay(200);
+  //   }
+  // else if (motorStopped == true)
+  //   {
+  //     motorController.Stop();
+  //     delay(100);
+  //     motorController.Enable();
+  //     motorController.TurnRight(returnSpeed);
+  //     debugln("motorcontroler right turn enabled");
+  //     delay(3000);
+  //     motorController.Stop();
+  //     debugln("motorcontroller right turn stopped");
+  //     delay(5000);
+  //     motorStopped = false;
+  //   }
+
+  // // take 10 readings and add them up
+  // for (int i = 0; i < 2; i++) {
+  //   reading = motorController.CurrentSenseLeft();
+  //   currentSum += reading;
+  //   }
+  // // calculate the average
+  // averageCurrent = (float) currentSum / 2;
+
+  // // int reading = analogRead(L_IS);
+
+  // if (averageCurrent > 500 && motorStopped == false)
+  //   {
+  //     motorStopped = true;
+  //     debugln("current sense triggered !!!!!!!!!!!!!!");
+  //   }
   debug("reading: ");
   debugln(reading);
   debugln(motorController.CurrentSenseLeft());
@@ -302,10 +361,12 @@ void strokeRoutine() {
 }
 
 void displayMenu() {
+  running = false;
   MainMenu_Previous = (MainMenu_Selected - 1);
   MainMenu_Next = (MainMenu_Selected + 1);
 
   u8g2.clearBuffer();
+  u8g2.setFont(normalFont);
   u8g2.drawHLine(0,12,128);
   u8g2.drawStr(47,8, "Spanky");
   u8g2.drawFrame(10,31,108,19);
@@ -317,8 +378,9 @@ void displayMenu() {
 
 void displayStart() {
   u8g2.clearBuffer();
+  u8g2.setFont(normalFont);
   u8g2.setCursor(55,14);
-  u8g2.print(strokes);
+  u8g2.print(amountOfStrokes);
   u8g2.drawStr(40,38,"<< back");
   u8g2.drawStr(40,58,"start >>");
 
@@ -337,6 +399,16 @@ void displayStart() {
       break;
   }
   u8g2.sendBuffer();
+}
+
+void displayRunning(){
+  u8g2.clearBuffer();
+  u8g2.setFont(normalFont);
+  u8g2.drawStr(20,10,"Strokes Left");
+  u8g2.setCursor(50,35);
+  u8g2.print(amountOfStrokes);
+  u8g2.sendBuffer();
+  running = true;
 }
 
 void displayMenuSettings() {
@@ -412,9 +484,13 @@ void loop() {
   // put your main code here, to run repeatedly:
   currentMillis = millis();
   readButtonState();
-  // strokeRoutine();
 
-  // Display selected menu
+  if (running == true) {
+    strokeRoutine();
+  }
+
+
+  // Display selected menu 
   switch (menuLevel) {
     case 1:
       displayMenu();
@@ -422,6 +498,10 @@ void loop() {
 
     case 10:
       displayStart();
+      break;
+
+    case 20:
+      displayRunning();
       break;
     
     case 11: 
