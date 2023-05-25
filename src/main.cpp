@@ -73,9 +73,10 @@ int Settings_Selected = 1;
 const int MainMenuNumItems = 3; // number of items in the list 
 const int MainMenuMaxItemLength = 20; // maximum characters for the item name
 char MainMenuItems [MainMenuNumItems] [MainMenuMaxItemLength] = {"Start","Settings","Info"};
-int MainMenu_Selected = 0;
+int MainMenu_Selected = 1;
 int MainMenu_Previous;
 int MainMenu_Next;
+int StartMenu_Selected = 1;
 
 
 
@@ -111,6 +112,49 @@ void readButtonState() {
         }
       break;
 
+    case 10:
+        if (buttonRight) {
+          if ((strokes < 255) && (StartMenu_Selected == 1)) {
+          strokes++;
+          }
+          delay(50);
+        }
+        if (buttonLeft) {
+          if ((strokes > 1) && (StartMenu_Selected == 1)) {
+          strokes--;
+          }
+          delay(50);
+        }
+        if (buttonUp) {
+          if (StartMenu_Selected > 1) {
+            StartMenu_Selected--;
+            delay(100);
+            }
+          }
+        if (buttonDown) {
+          if (StartMenu_Selected < 3) {
+            StartMenu_Selected++;
+            delay(100);
+            }
+          }
+        if (buttonEnter) {
+          switch (StartMenu_Selected) {
+            case 1:
+            strokes = 1;
+            break;
+            
+            case 2:
+            menuLevel = 1;
+            break;
+
+            case 3:
+            // start stroking
+            break;
+            delay(300);
+          }
+        }
+        break; 
+
     case 11:
       if (buttonDown) {
         if (Settings_Selected < 6) {
@@ -125,6 +169,7 @@ void readButtonState() {
         }
       } 
       if (buttonEnter) {
+        debugln("case 11 menu level 1");
         menuLevel = 1;
         delay(100);
       }
@@ -270,6 +315,30 @@ void displayMenu() {
   u8g2.sendBuffer();
 }
 
+void displayStart() {
+  u8g2.clearBuffer();
+  u8g2.setCursor(55,14);
+  u8g2.print(strokes);
+  u8g2.drawStr(40,38,"<< back");
+  u8g2.drawStr(40,58,"start >>");
+
+  switch (StartMenu_Selected) {
+    case 1: 
+      u8g2.drawFrame(30,01,68,19);
+      break;
+    case 2:
+      u8g2.drawFrame(30,25,68,19);
+      break;
+    case 3:
+      u8g2.drawFrame(30,45,68,19);
+      break;
+    default:
+      u8g2.drawFrame(30,01,68,19);
+      break;
+  }
+  u8g2.sendBuffer();
+}
+
 void displayMenuSettings() {
   u8g2.clearBuffer();
   u8g2.drawVLine(78, 0, 64);
@@ -349,6 +418,10 @@ void loop() {
   switch (menuLevel) {
     case 1:
       displayMenu();
+      break;
+
+    case 10:
+      displayStart();
       break;
     
     case 11: 
