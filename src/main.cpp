@@ -46,23 +46,26 @@ BTS7960 motorController(EN_L, EN_R, L_PWM, R_PWM, L_IS, R_IS);
 // variables
 unsigned long currentMillis = 0;
 unsigned long previousMillis = 0;
+unsigned long lastSpankMillis = 0;
 unsigned long startStrokingCurrentMeasuringDelay = 300; // milliseconds
 unsigned long startReturningCurrentMeasuringDelay = 300; // milliseconds
 
 bool motorStopped = false;
 bool stroking = false;
 bool returning = false;
+bool running = false;
+bool startFirstSpankDelay = false;
 int reading = 0; // current reading
 int currentSum = 0; // sum of current readings
 float averageCurrent = 0;
 int startDelay = 5; // start delay in seconds
+int pauseBetweenStrokes = 20; // delay between strokes in seconds
 int amountOfStrokes = 1; // number of strokes
-int strokePause = 8; // pause between strokes in seconds
 int strokeSpeed = 200; // speed of the stroke pwm 0-255
 int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
-int strokeCurrentLimit = 500; // current threshold to stop motor during stroke
+int strokeCurrentLimit = 400; // current threshold to stop motor during stroke
 int returnCurrentLimit = 50; // current threshold to stop motor during return
-bool running = false;
+
 // buttons
 bool buttonLeft = false;
 bool buttonRight = false;
@@ -82,8 +85,6 @@ int MainMenu_Selected = 1;
 int MainMenu_Previous;
 int MainMenu_Next;
 int StartMenu_Selected = 1;
-
-
 
 
 // Display Type
@@ -159,6 +160,9 @@ void returnMotor();
             // start stroking
             menuLevel = 20;
             // delay(startDelay * 1000);
+            startFirstSpankDelay = true;
+            returning = false;
+            previousMillis = millis();
             strokeRoutine();
             break;
             delay(300);
@@ -216,8 +220,8 @@ void returnMotor();
             }
             break;
           case 5:
-          if (strokePause > 0) {
-            strokePause--;
+          if (pauseBetweenStrokes > 0) {
+            pauseBetweenStrokes--;
             delay(100);
             }
             break;
@@ -255,8 +259,8 @@ void returnMotor();
             }
             break;
           case 5:
-          if (strokePause < 255) {
-            strokePause++;
+          if (pauseBetweenStrokes < 255) {
+            pauseBetweenStrokes++;
             delay(100);
             }
             break;
@@ -295,6 +299,7 @@ void stroke() {
   if (motorController.CurrentSenseLeft() > strokeCurrentLimit) {
     debugln("stroke current limit triggered");
     motorController.Stop();
+    lastSpankMillis = millis();
     amountOfStrokes--;
     delay(1000);
     stroking = false;
@@ -303,7 +308,12 @@ void stroke() {
   }
 
 void strokeRoutine() {
-  if ((amountOfStrokes > 0) && returning == false) {
+
+  if ((startFirstSpankDelay == true) && (millis() - previousMillis >= startDelay * 1000 )) {
+    startFirstSpankDelay = false;
+  }
+
+  if ((amountOfStrokes > 0) && (returning == false) && (startFirstSpankDelay == false) && (millis() - lastSpankMillis >= pauseBetweenStrokes * 1000)) {
     stroking = true;
     stroke();
   }
@@ -432,7 +442,7 @@ void displayMenuSettings() {
   u8g2.setCursor(90,38);
   u8g2.print(returnCurrentLimit);
   u8g2.setCursor(90,48);
-  u8g2.print(strokePause);
+  u8g2.print(pauseBetweenStrokes);
   u8g2.setCursor(90,58);
   u8g2.print(startDelay);
   
