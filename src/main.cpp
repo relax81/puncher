@@ -46,7 +46,9 @@ BTS7960 motorController(EN_L, EN_R, L_PWM, R_PWM, L_IS, R_IS);
 // variables
 unsigned long currentMillis = 0;
 unsigned long previousMillis = 0;
-unsigned long startCurrentMeasuringDelay = 100; // milliseconds
+unsigned long startStrokingCurrentMeasuringDelay = 300; // milliseconds
+unsigned long startReturningCurrentMeasuringDelay = 300; // milliseconds
+
 bool motorStopped = false;
 bool stroking = false;
 bool returning = false;
@@ -56,10 +58,10 @@ float averageCurrent = 0;
 int startDelay = 5; // start delay in seconds
 int amountOfStrokes = 1; // number of strokes
 int strokePause = 8; // pause between strokes in seconds
-int strokeSpeed = 150; // speed of the stroke pwm 0-255
+int strokeSpeed = 200; // speed of the stroke pwm 0-255
 int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
 int strokeCurrentLimit = 500; // current threshold to stop motor during stroke
-int returnCurrentLimit = 300; // current threshold to stop motor during return
+int returnCurrentLimit = 50; // current threshold to stop motor during return
 bool running = false;
 // buttons
 bool buttonLeft = false;
@@ -276,7 +278,7 @@ void returnMotor() {
   debugln("returnMotor function running");
   motorController.Enable();
   motorController.TurnRight(returnSpeed);
-  delay(startCurrentMeasuringDelay);
+  delay(startReturningCurrentMeasuringDelay);
   if (motorController.CurrentSenseLeft() > returnCurrentLimit){
     debugln("return current limit triggered");
     motorController.Stop();
@@ -289,14 +291,14 @@ void stroke() {
   debugln("stroke function running");
   motorController.Enable();
   motorController.TurnLeft(strokeSpeed);
-  delay(startCurrentMeasuringDelay);
+  delay(startStrokingCurrentMeasuringDelay);
   if (motorController.CurrentSenseLeft() > strokeCurrentLimit) {
     debugln("stroke current limit triggered");
     motorController.Stop();
     amountOfStrokes--;
-    delay(200);
+    delay(1000);
     stroking = false;
-    returnMotor();
+    returning = true;
     }
   }
 
@@ -304,6 +306,10 @@ void strokeRoutine() {
   if ((amountOfStrokes > 0) && returning == false) {
     stroking = true;
     stroke();
+  }
+
+  if (returning == true) {
+    returnMotor();
   }
 
   if (amountOfStrokes == 0) {
@@ -315,9 +321,6 @@ void strokeRoutine() {
 
 
   // int currentSum = 0;
-
-
-
   // if ((motorStopped == false) && (amountOfStrokes > 0)) {
   //   motorController.TurnLeft(strokeSpeed);
   //   amountOfStrokes--;
@@ -352,11 +355,9 @@ void strokeRoutine() {
   //     motorStopped = true;
   //     debugln("current sense triggered !!!!!!!!!!!!!!");
   //   }
-  debug("reading: ");
-  debugln(reading);
+
+
   debugln(motorController.CurrentSenseLeft());
-  debug("averageCurrent: ");
-  debugln(averageCurrent);
   delay(100);
 }
 
@@ -513,6 +514,5 @@ void loop() {
       menuLevel = 1;
       break;
   }
-
 
 }
