@@ -27,12 +27,29 @@
 #include <U8g2lib.h>
 #include "BTS7960.h"
 
-// butttons
+// button pins
 #define btn_up 23
 #define btn_enter 19
 #define btn_left 18
 #define btn_down 4
 #define btn_right 13
+
+// new button routine
+bool btn_up_pressed = false;
+bool btn_enter_pressed = false;
+bool btn_left_pressed = false;
+bool btn_down_pressed = false;
+bool btn_right_pressed = false;
+unsigned long pressStartTime;
+unsigned long longPressTime = 300;
+
+// old button routine (can be removed if new works)
+bool buttonLeft = false;
+bool buttonRight = false;
+bool buttonUp = false;
+bool buttonDown = false;
+bool buttonEnter = false;
+
 
 // BTS7960
 const uint8_t EN_L = 33;
@@ -66,12 +83,6 @@ int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
 int strokeCurrentLimit = 400; // current threshold to stop motor during stroke
 int returnCurrentLimit = 50; // current threshold to stop motor during return
 
-// buttons
-bool buttonLeft = false;
-bool buttonRight = false;
-bool buttonUp = false;
-bool buttonDown = false;
-bool buttonEnter = false;
 // fonts
 #define normalFont u8g2_font_t0_11b_mf
 #define settingsFont u8g2_font_NokiaSmallBold_tf
@@ -89,6 +100,123 @@ int StartMenu_Selected = 1;
 
 // Display Type
   U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+
+void newButtonRoutine(){
+  //// button down
+  // button down short press
+  if (digitalRead(btn_down) == LOW && !btn_down_pressed) {
+    btn_down_pressed = true;
+    pressStartTime = millis();
+    // do something for short press
+    debugln("button down short pressed");
+  }
+  // button down release
+  else if (digitalRead(btn_down) == HIGH && btn_down_pressed){
+    btn_down_pressed = false;
+  }
+  // button down long press check
+  if (btn_down_pressed && millis() - pressStartTime >= longPressTime) {
+    // do something for long press
+    pressStartTime = millis(); // Reset the start time
+    Serial.println("button down long pressed");
+  }
+
+  //// button up
+  // button up short press
+  if (digitalRead(btn_up) == LOW && !btn_up_pressed) {
+    btn_up_pressed = true;
+    pressStartTime = millis();
+    // do something for short press
+    debugln("button up short pressed");
+  }
+  // button up release
+  else if (digitalRead(btn_up) == HIGH && btn_up_pressed){
+    btn_up_pressed = false;
+  }
+  // button up long press check
+  if (btn_up_pressed && millis() - pressStartTime >= longPressTime) {
+    // do something for long press
+    pressStartTime = millis(); // Reset the start time
+    Serial.println("button up long pressed");
+  }
+
+  //// button enter
+  // button enter short press
+  if (digitalRead(btn_enter) == LOW && !btn_enter_pressed) {
+    btn_enter_pressed = true;
+    pressStartTime = millis();
+    // do something for short press
+    debugln("button up short pressed");
+  }
+  // button enter release
+  else if (digitalRead(btn_enter) == HIGH && btn_enter_pressed){
+    btn_enter_pressed = false;
+  }
+  // button enter long press check
+  if (btn_enter_pressed && millis() - pressStartTime >= longPressTime) {
+    // do something for long press
+    pressStartTime = millis(); // Reset the start time
+    Serial.println("button enter long pressed");
+  }
+
+  //// button enter
+  // button enter short press
+  if (digitalRead(btn_enter) == LOW && !btn_enter_pressed) {
+    btn_enter_pressed = true;
+    pressStartTime = millis();
+    // do something for short press
+    debugln("button up short pressed");
+  }
+  // button enter release
+  else if (digitalRead(btn_enter) == HIGH && btn_enter_pressed){
+    btn_enter_pressed = false;
+  }
+  // button enter long press check
+  if (btn_enter_pressed && millis() - pressStartTime >= longPressTime) {
+    // do something for long press
+    pressStartTime = millis(); // Reset the start time
+    Serial.println("button enter long pressed");
+  }
+
+  //// button left
+  // button left short press
+  if (digitalRead(btn_left) == LOW && !btn_left_pressed) {
+    btn_left_pressed = true;
+    pressStartTime = millis();
+    // do something for short press
+    debugln("button left short pressed");
+  }
+  // button enter release
+  else if (digitalRead(btn_left) == HIGH && btn_left_pressed){
+    btn_left_pressed = false;
+  }
+  // button left long press check
+  if (btn_left_pressed && millis() - pressStartTime >= longPressTime) {
+    // do something for long press
+    pressStartTime = millis(); // Reset the start time
+    Serial.println("button left long pressed");
+  }
+
+  //// button right
+  // button right short press
+  if (digitalRead(btn_right) == LOW && !btn_right_pressed) {
+    btn_right_pressed = true;
+    pressStartTime = millis();
+    // do something for short press
+    debugln("button right short pressed");
+  }
+  // button enter release
+  else if (digitalRead(btn_right) == HIGH && btn_right_pressed){
+    btn_right_pressed = false;
+  }
+  // button right long press check
+  if (btn_right_pressed && millis() - pressStartTime >= longPressTime) {
+    // do something for long press
+    pressStartTime = millis(); // Reset the start time
+    Serial.println("button right long pressed");
+  }
+
+}
 
 void readButtonState() {
  buttonLeft = digitalRead(btn_left) == LOW;
