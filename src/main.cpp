@@ -41,15 +41,18 @@ bool btn_left_pressed = false;
 bool btn_down_pressed = false;
 bool btn_right_pressed = false;
 unsigned long pressStartTime;
-unsigned long longPressTime = 300;
-
-// old button routine (can be removed if new works)
-bool buttonLeft = false;
-bool buttonRight = false;
-bool buttonUp = false;
-bool buttonDown = false;
-bool buttonEnter = false;
-
+unsigned long debounceTime = 100;
+unsigned long longPressTime = 500;
+bool btn_down_short = false;
+bool btn_down_long = false;
+bool btn_up_short = false;
+bool btn_up_long = false;
+bool btn_enter_short = false;
+bool btn_enter_long = false;
+bool btn_left_short = false;
+bool btn_left_long = false;
+bool btn_right_short = false;
+bool btn_right_long = false;
 
 // BTS7960
 const uint8_t EN_L = 33;
@@ -97,6 +100,10 @@ int MainMenu_Previous;
 int MainMenu_Next;
 int StartMenu_Selected = 1;
 
+void strokeRoutine();
+void stroke();
+void returnMotor();
+
 
 // Display Type
   U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
@@ -107,18 +114,20 @@ void newButtonRoutine(){
   if (digitalRead(btn_down) == LOW && !btn_down_pressed) {
     btn_down_pressed = true;
     pressStartTime = millis();
-    // do something for short press
-    debugln("button down short pressed");
   }
   // button down release
   else if (digitalRead(btn_down) == HIGH && btn_down_pressed){
     btn_down_pressed = false;
+    btn_down_short = false;
+    btn_down_long = false;
   }
   // button down long press check
   if (btn_down_pressed && millis() - pressStartTime >= longPressTime) {
-    // do something for long press
+    btn_down_long = true;
     pressStartTime = millis(); // Reset the start time
-    Serial.println("button down long pressed");
+  }
+  else if (btn_down_pressed && millis() - pressStartTime > debounceTime) {
+    btn_down_short = true;
   }
 
   //// button up
@@ -132,12 +141,16 @@ void newButtonRoutine(){
   // button up release
   else if (digitalRead(btn_up) == HIGH && btn_up_pressed){
     btn_up_pressed = false;
+    btn_up_short = false;
+    btn_up_long = false;
   }
   // button up long press check
   if (btn_up_pressed && millis() - pressStartTime >= longPressTime) {
-    // do something for long press
+    btn_up_long = true;
     pressStartTime = millis(); // Reset the start time
-    Serial.println("button up long pressed");
+  }
+  else if (btn_up_pressed && millis() - pressStartTime > debounceTime) {
+      btn_up_short = true;
   }
 
   //// button enter
@@ -145,37 +158,21 @@ void newButtonRoutine(){
   if (digitalRead(btn_enter) == LOW && !btn_enter_pressed) {
     btn_enter_pressed = true;
     pressStartTime = millis();
-    // do something for short press
     debugln("button up short pressed");
   }
   // button enter release
   else if (digitalRead(btn_enter) == HIGH && btn_enter_pressed){
     btn_enter_pressed = false;
+    btn_enter_short = false;
+    btn_enter_long = false;
   }
   // button enter long press check
   if (btn_enter_pressed && millis() - pressStartTime >= longPressTime) {
-    // do something for long press
+    btn_enter_long = true;
     pressStartTime = millis(); // Reset the start time
-    Serial.println("button enter long pressed");
   }
-
-  //// button enter
-  // button enter short press
-  if (digitalRead(btn_enter) == LOW && !btn_enter_pressed) {
-    btn_enter_pressed = true;
-    pressStartTime = millis();
-    // do something for short press
-    debugln("button up short pressed");
-  }
-  // button enter release
-  else if (digitalRead(btn_enter) == HIGH && btn_enter_pressed){
-    btn_enter_pressed = false;
-  }
-  // button enter long press check
-  if (btn_enter_pressed && millis() - pressStartTime >= longPressTime) {
-    // do something for long press
-    pressStartTime = millis(); // Reset the start time
-    Serial.println("button enter long pressed");
+  else if (btn_enter_pressed && millis() - pressStartTime > debounceTime) {
+      btn_enter_short = true;
   }
 
   //// button left
@@ -183,18 +180,20 @@ void newButtonRoutine(){
   if (digitalRead(btn_left) == LOW && !btn_left_pressed) {
     btn_left_pressed = true;
     pressStartTime = millis();
-    // do something for short press
-    debugln("button left short pressed");
   }
   // button enter release
   else if (digitalRead(btn_left) == HIGH && btn_left_pressed){
     btn_left_pressed = false;
+    btn_left_short = false;
+    btn_left_long = false;
   }
   // button left long press check
   if (btn_left_pressed && millis() - pressStartTime >= longPressTime) {
-    // do something for long press
+    btn_left_long = true;
     pressStartTime = millis(); // Reset the start time
-    Serial.println("button left long pressed");
+  }
+  else if (btn_left_pressed && millis() - pressStartTime > debounceTime) {
+    btn_left_short = true;
   }
 
   //// button right
@@ -202,79 +201,74 @@ void newButtonRoutine(){
   if (digitalRead(btn_right) == LOW && !btn_right_pressed) {
     btn_right_pressed = true;
     pressStartTime = millis();
-    // do something for short press
-    debugln("button right short pressed");
   }
   // button enter release
   else if (digitalRead(btn_right) == HIGH && btn_right_pressed){
     btn_right_pressed = false;
+    btn_right_short = false;
+    btn_right_long = false;
   }
   // button right long press check
   if (btn_right_pressed && millis() - pressStartTime >= longPressTime) {
-    // do something for long press
+    btn_right_long = true;
     pressStartTime = millis(); // Reset the start time
-    Serial.println("button right long pressed");
+  }
+  else if (btn_right_pressed && millis() - pressStartTime > debounceTime) {
+    btn_right_short = true;
   }
 
 }
 
-void readButtonState() {
- buttonLeft = digitalRead(btn_left) == LOW;
- buttonRight = digitalRead(btn_right) == LOW;
- buttonUp = digitalRead(btn_up) == LOW;
- buttonDown = digitalRead(btn_down) == LOW;
- buttonEnter = digitalRead(btn_enter) == LOW;
-
-void strokeRoutine();
-void stroke();
-void returnMotor();
-
-  switch (menuLevel) {
+void newButtonNavigation() {
+    switch (menuLevel) {
     case 1:
-        if (buttonUp) {
+        if (btn_down_short) {
           if (MainMenu_Selected < MainMenuNumItems - 1) {
             MainMenu_Selected++;
-            delay(100);
             }
           } 
-        if (buttonDown) {
+        if (btn_up_short) {
           if (MainMenu_Selected > 0) {
             MainMenu_Selected--;
-            delay(100);
             }
           }
-        if (buttonEnter){
+        if (btn_enter_short){
           menuLevel = MainMenu_Selected + 10;
-          delay(100);
         }
       break;
 
     case 10:
-        if (buttonRight) {
+        if (btn_right_short) {
           if ((amountOfStrokes < 255) && (StartMenu_Selected == 1)) {
           amountOfStrokes++;
           }
-          delay(50);
         }
-        if (buttonLeft) {
+        if (btn_right_long) {
+          if ((amountOfStrokes < 245) && (StartMenu_Selected == 1)) {
+          amountOfStrokes = amountOfStrokes + 10;
+          }
+        }
+        if (btn_left_short) {
           if ((amountOfStrokes > 1) && (StartMenu_Selected == 1)) {
           amountOfStrokes--;
           }
-          delay(50);
+        if (btn_left_long){
+          if ((amountOfStrokes > 10) && (StartMenu_Selected == 1)) {
+          amountOfStrokes = amountOfStrokes - 10;
+          }
         }
-        if (buttonUp) {
+        }
+        if (btn_up_short) {
           if (StartMenu_Selected > 1) {
             StartMenu_Selected--;
-            delay(100);
             }
           }
-        if (buttonDown) {
+        if (btn_down_short) {
           if (StartMenu_Selected < 3) {
             StartMenu_Selected++;
-            delay(100);
             }
           }
-        if (buttonEnter) {
+        if (btn_enter_short) {
           switch (StartMenu_Selected) {
             case 1:
             amountOfStrokes = 1;
@@ -287,54 +281,46 @@ void returnMotor();
             case 3:
             // start stroking
             menuLevel = 20;
-            // delay(startDelay * 1000);
             startFirstSpankDelay = true;
             returning = false;
             previousMillis = millis();
             strokeRoutine();
             break;
-            delay(300);
           }
         }
         break; 
 
     case 20:
-      if (buttonEnter) {
+      if (btn_enter_short) {
         menuLevel = 1;
         running = false;
-        delay(500);
       }
 
     case 11:
-      if (buttonDown) {
+      if (btn_down_short) {
         if (Settings_Selected < 6) {
         Settings_Selected++;
-        delay(100);
         }
       }
-      if (buttonUp) {
+      if (btn_up_short) {
         if (Settings_Selected > 1) {
         Settings_Selected--;
-        delay(100);
         }
       } 
-      if (buttonEnter) {
+      if (btn_enter_short) {
         debugln("case 11 menu level 1");
         menuLevel = 1;
-        delay(100);
       }
-      if (buttonLeft) {
+      if (btn_left_short) {
         switch (Settings_Selected) {
           case 1:
             if (strokeSpeed > 0) {
             strokeSpeed--;
-            delay(20);
             }
             break;
           case 2:
-            if (returnSpeed >0) {
+            if (returnSpeed > 0) {
           returnSpeed--;
-          delay(20);
             }
             break;
           case 3:
@@ -350,30 +336,61 @@ void returnMotor();
           case 5:
           if (pauseBetweenStrokes > 0) {
             pauseBetweenStrokes--;
-            delay(100);
             }
             break;
           case 6:
           if (startDelay > 0) {
             startDelay--;
-            delay(100);
             }
             break;
         }
       }
 
-      if (buttonRight) {
+      if (btn_left_long) {
+        switch (Settings_Selected) {
+          case 1:
+            if (strokeSpeed > 10) {
+            strokeSpeed = strokeSpeed - 10;
+            }
+            break;
+          case 2:
+            if (returnSpeed > 10) {
+          returnSpeed = returnSpeed - 10;
+            }
+            break;
+          case 3:
+            if (strokeCurrentLimit > 10) {
+            strokeCurrentLimit = strokeCurrentLimit - 10;
+            }
+            break;
+          case 4:
+          if (returnCurrentLimit > 10) {
+            returnCurrentLimit = returnCurrentLimit - 10;
+            }
+            break;
+          case 5:
+          if (pauseBetweenStrokes > 10) {
+            pauseBetweenStrokes = pauseBetweenStrokes - 10;
+            }
+            break;
+          case 6:
+          if (startDelay > 10) {
+            startDelay = startDelay - 10;
+            }
+            break;
+        }
+      }
+
+      if (btn_right_short) {
         switch (Settings_Selected) {
           case 1:
             if (strokeSpeed < 255) {
             strokeSpeed++;
-            delay(20);
             }
             break;
           case 2:
             if (returnSpeed < 255) {
           returnSpeed++;
-          delay(20);
             }
             break;
           case 3:
@@ -389,13 +406,46 @@ void returnMotor();
           case 5:
           if (pauseBetweenStrokes < 255) {
             pauseBetweenStrokes++;
-            delay(100);
             }
             break;
           case 6:
           if (startDelay < 255) {
             startDelay++;
-            delay(100);
+            }
+            break;
+        }
+      }
+
+      if (btn_right_long) {
+        switch (Settings_Selected) {
+          case 1:
+            if (strokeSpeed < 245) {
+            strokeSpeed = strokeSpeed + 10;
+            }
+            break;
+          case 2:
+            if (returnSpeed < 245) {
+          returnSpeed = returnSpeed + 10;
+            }
+            break;
+          case 3:
+            if (strokeCurrentLimit < 1990) {
+            strokeCurrentLimit = strokeCurrentLimit + 10;
+            }
+            break;
+          case 4:
+          if (returnCurrentLimit < 1990) {
+            returnCurrentLimit = returnCurrentLimit + 10;
+            }
+            break;
+          case 5:
+          if (pauseBetweenStrokes < 245) {
+            pauseBetweenStrokes = pauseBetweenStrokes + 10;;
+            }
+            break;
+          case 6:
+          if (startDelay < 245) {
+            startDelay = startDelay + 10;
             }
             break;
         }
@@ -403,7 +453,6 @@ void returnMotor();
 
       break;
   }
-
 }
 
 void returnMotor() {
@@ -622,7 +671,9 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   currentMillis = millis();
-  readButtonState();
+  // readButtonState();
+  newButtonRoutine();
+  newButtonNavigation();
 
   if (running == true) {
     strokeRoutine();
