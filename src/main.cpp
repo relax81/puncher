@@ -83,7 +83,7 @@ int pauseBetweenStrokes = 20; // delay between strokes in seconds
 int amountOfStrokes = 1; // number of strokes
 int strokeSpeed = 200; // speed of the stroke pwm 0-255
 int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
-int strokeCurrentLimit = 400; // current threshold to stop motor during stroke
+int strokeCurrentLimit = 50; // current threshold to stop motor during stroke
 int returnCurrentLimit = 50; // current threshold to stop motor during return
 
 // fonts
@@ -128,6 +128,7 @@ void newButtonRoutine(){
   }
   else if (btn_down_pressed && millis() - pressStartTime > debounceTime) {
     btn_down_short = true;
+    delay(100);
   }
 
   //// button up
@@ -151,6 +152,7 @@ void newButtonRoutine(){
   }
   else if (btn_up_pressed && millis() - pressStartTime > debounceTime) {
       btn_up_short = true;
+      delay(100);
   }
 
   //// button enter
@@ -173,6 +175,7 @@ void newButtonRoutine(){
   }
   else if (btn_enter_pressed && millis() - pressStartTime > debounceTime) {
       btn_enter_short = true;
+      delay(200);
   }
 
   //// button left
