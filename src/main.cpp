@@ -136,8 +136,6 @@ void newButtonRoutine(){
   if (digitalRead(btn_up) == LOW && !btn_up_pressed) {
     btn_up_pressed = true;
     pressStartTime = millis();
-    // do something for short press
-    debugln("button up short pressed");
   }
   // button up release
   else if (digitalRead(btn_up) == HIGH && btn_up_pressed){
@@ -160,7 +158,6 @@ void newButtonRoutine(){
   if (digitalRead(btn_enter) == LOW && !btn_enter_pressed) {
     btn_enter_pressed = true;
     pressStartTime = millis();
-    debugln("button up short pressed");
   }
   // button enter release
   else if (digitalRead(btn_enter) == HIGH && btn_enter_pressed){
