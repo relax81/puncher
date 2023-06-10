@@ -455,7 +455,9 @@ void displayMenu() {
   u8g2.drawHLine(0,12,128);
   u8g2.drawStr(47,8, "Spanky");
   u8g2.drawFrame(10,31,108,19);
-  u8g2.drawStr(38,24,MainMenuItems[MainMenu_Previous]);
+  if (MainMenu_Selected > 1) {
+    u8g2.drawStr(38,24,MainMenuItems[MainMenu_Previous]);
+  }
   u8g2.drawStr(38,44,MainMenuItems[MainMenu_Selected]);
   u8g2.drawStr(38,64,MainMenuItems[MainMenu_Next]);
   u8g2.sendBuffer();
