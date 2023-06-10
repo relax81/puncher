@@ -89,9 +89,11 @@ int returnCurrentLimit = 50; // current threshold to stop motor during return
 // fonts
 #define normalFont u8g2_font_t0_11b_mf
 #define settingsFont u8g2_font_NokiaSmallBold_tf
+#define selectFont u8g2_font_Born2bSportyV2_tf
+
 // menu
 int menuLevel = 1;
-int Settings_Selected = 1;
+int currentMenuIndex = 3;
 const int MainMenuNumItems = 3; // number of items in the list 
 const int MainMenuMaxItemLength = 20; // maximum characters for the item name
 char MainMenuItems [MainMenuNumItems] [MainMenuMaxItemLength] = {"Start","Settings","Info"};
@@ -99,6 +101,26 @@ int MainMenu_Selected = 1;
 int MainMenu_Previous;
 int MainMenu_Next;
 int StartMenu_Selected = 1;
+
+//// settings menu array
+// Define the struct for menu items
+struct MenuItem {
+  const char* name;
+  int value;
+};
+// Define the menu array
+MenuItem menu[] = {
+  {"stroke Speed", strokeSpeed},
+  {"return Speed", returnSpeed},
+  {"stroke Limit", strokeCurrentLimit},
+  {"return Limit", returnCurrentLimit},
+  {"stroke pause", pauseBetweenStrokes},
+  {"start delay", startDelay},
+  {"stroke IS delay", startStrokingCurrentMeasuringDelay},
+  {"return IS delay", startReturningCurrentMeasuringDelay}
+};
+// Total number of menu items
+const int menuSize = sizeof(menu) / sizeof(menu[0]);
 
 void strokeRoutine();
 void stroke();
@@ -296,15 +318,16 @@ void newButtonNavigation() {
         running = false;
       }
 
-    case 11:
+    // Settings
+    case 11: 
       if (btn_down_short) {
-        if (Settings_Selected < 6) {
-        Settings_Selected++;
+        if (currentMenuIndex < (menuSize - 1)) {
+        currentMenuIndex++;
         }
       }
       if (btn_up_short) {
-        if (Settings_Selected > 1) {
-        Settings_Selected--;
+        if (currentMenuIndex > 0) {
+        currentMenuIndex--;
         }
       } 
       if (btn_enter_short) {
@@ -312,146 +335,20 @@ void newButtonNavigation() {
         menuLevel = 1;
       }
       if (btn_left_short) {
-        switch (Settings_Selected) {
-          case 1:
-            if (strokeSpeed > 0) {
-            strokeSpeed--;
-            }
-            break;
-          case 2:
-            if (returnSpeed > 0) {
-          returnSpeed--;
-            }
-            break;
-          case 3:
-            if (strokeCurrentLimit > 0) {
-            strokeCurrentLimit--;
-            }
-            break;
-          case 4:
-          if (returnCurrentLimit > 0) {
-            returnCurrentLimit--;
-            }
-            break;
-          case 5:
-          if (pauseBetweenStrokes > 0) {
-            pauseBetweenStrokes--;
-            }
-            break;
-          case 6:
-          if (startDelay > 0) {
-            startDelay--;
-            }
-            break;
-        }
+        menu[currentMenuIndex].value--;
       }
 
       if (btn_left_long) {
-        switch (Settings_Selected) {
-          case 1:
-            if (strokeSpeed > 10) {
-            strokeSpeed = strokeSpeed - 10;
-            }
-            break;
-          case 2:
-            if (returnSpeed > 10) {
-          returnSpeed = returnSpeed - 10;
-            }
-            break;
-          case 3:
-            if (strokeCurrentLimit > 10) {
-            strokeCurrentLimit = strokeCurrentLimit - 10;
-            }
-            break;
-          case 4:
-          if (returnCurrentLimit > 10) {
-            returnCurrentLimit = returnCurrentLimit - 10;
-            }
-            break;
-          case 5:
-          if (pauseBetweenStrokes > 10) {
-            pauseBetweenStrokes = pauseBetweenStrokes - 10;
-            }
-            break;
-          case 6:
-          if (startDelay > 10) {
-            startDelay = startDelay - 10;
-            }
-            break;
-        }
+        menu[currentMenuIndex].value = menu[currentMenuIndex].value - 10;
       }
 
       if (btn_right_short) {
-        switch (Settings_Selected) {
-          case 1:
-            if (strokeSpeed < 255) {
-            strokeSpeed++;
-            }
-            break;
-          case 2:
-            if (returnSpeed < 255) {
-          returnSpeed++;
-            }
-            break;
-          case 3:
-            if (strokeCurrentLimit < 2000) {
-            strokeCurrentLimit++;
-            }
-            break;
-          case 4:
-          if (returnCurrentLimit < 2000) {
-            returnCurrentLimit++;
-            }
-            break;
-          case 5:
-          if (pauseBetweenStrokes < 255) {
-            pauseBetweenStrokes++;
-            }
-            break;
-          case 6:
-          if (startDelay < 255) {
-            startDelay++;
-            }
-            break;
-        }
+        menu[currentMenuIndex].value++;
       }
 
       if (btn_right_long) {
-        switch (Settings_Selected) {
-          case 1:
-            if (strokeSpeed < 245) {
-            strokeSpeed = strokeSpeed + 10;
-            }
-            break;
-          case 2:
-            if (returnSpeed < 245) {
-          returnSpeed = returnSpeed + 10;
-            }
-            break;
-          case 3:
-            if (strokeCurrentLimit < 1990) {
-            strokeCurrentLimit = strokeCurrentLimit + 10;
-            }
-            break;
-          case 4:
-          if (returnCurrentLimit < 1990) {
-            returnCurrentLimit = returnCurrentLimit + 10;
-            }
-            break;
-          case 5:
-          if (pauseBetweenStrokes < 245) {
-            pauseBetweenStrokes = pauseBetweenStrokes + 10;;
-            }
-            break;
-          case 6:
-          if (startDelay < 245) {
-            startDelay = startDelay + 10;
-            }
-            break;
-        }
+        menu[currentMenuIndex].value = menu[currentMenuIndex].value + 10;
       }
-
-      break;
   }
 }
 
@@ -599,52 +496,55 @@ void displayRunning(){
   running = true;
 }
 
+// new style
 void displayMenuSettings() {
   u8g2.clearBuffer();
-  u8g2.drawVLine(78, 0, 64);
-  u8g2.setFont(settingsFont);
-  u8g2.drawStr(0,8,"stroke Speed");
-  u8g2.drawStr(0,18,"return Speed");
-  u8g2.drawStr(0,28,"stroke Limit");
-  u8g2.drawStr(0,38,"return Limit");
-  u8g2.drawStr(0,48,"stroke pause");
-  u8g2.drawStr(0,58,"start delay");
-
-  u8g2.setCursor(90,8);
-  u8g2.print(strokeSpeed);
-  u8g2.setCursor(90,18);
-  u8g2.print(returnSpeed);
-  u8g2.setCursor(90,28);
-  u8g2.print(strokeCurrentLimit);
-  u8g2.setCursor(90,38);
-  u8g2.print(returnCurrentLimit);
-  u8g2.setCursor(90,48);
-  u8g2.print(pauseBetweenStrokes);
-  u8g2.setCursor(90,58);
-  u8g2.print(startDelay);
   
-
-  switch (Settings_Selected) {
-    case 1: 
-      u8g2.drawStr(120,8,"*");
-      break;
-    case 2: 
-      u8g2.drawStr(120,18,"*");
-      break;
-    case 3: 
-      u8g2.drawStr(120,28,"*");
-      break;
-    case 4: 
-      u8g2.drawStr(120,38,"*");
-      break;
-    case 5: 
-      u8g2.drawStr(120,48,"*");
-      break;
-    case 6: 
-      u8g2.drawStr(120,58,"*");
-      break;
-    default:
-      break;
+  // frame
+  u8g2.drawFrame(0,19,126,19);
+  // left column
+  u8g2.setFont(settingsFont);
+  u8g2.setCursor(2,8);
+  if (currentMenuIndex > 1) {
+    u8g2.print(menu[currentMenuIndex-2].name);
+    }
+  u8g2.setCursor(2,18);
+  if (currentMenuIndex > 0){
+  u8g2.print(menu[currentMenuIndex-1].name);
+  }
+  u8g2.setFont(selectFont);
+  u8g2.setCursor(2,33);
+  u8g2.print(menu[currentMenuIndex].name);
+  u8g2.setFont(settingsFont);
+  u8g2.setCursor(2,48);
+  if (currentMenuIndex < (menuSize - 1)) {
+  u8g2.print(menu[currentMenuIndex+1].name);
+  }
+  u8g2.setCursor(2,58);
+  if (currentMenuIndex < (menuSize - 2)){
+  u8g2.print(menu[currentMenuIndex+2].name);
+  }
+  
+  // right column
+  u8g2.setCursor(100,8);
+  if (currentMenuIndex > 1) {
+  u8g2.print(menu[currentMenuIndex-2].value);
+  }
+  u8g2.setCursor(100,18);
+  if (currentMenuIndex > 0){
+  u8g2.print(menu[currentMenuIndex-1].value);
+  }
+  u8g2.setFont(selectFont);
+  u8g2.setCursor(100,33);
+  u8g2.print(menu[currentMenuIndex].value);
+  u8g2.setFont(settingsFont);
+  u8g2.setCursor(100,48);
+  if (currentMenuIndex < (menuSize - 1)) {
+  u8g2.print(menu[currentMenuIndex+1].value);
+  }
+  u8g2.setCursor(100,58);
+  if (currentMenuIndex < (menuSize - 2)){
+  u8g2.print(menu[currentMenuIndex+2].value);
   }
 
   u8g2.sendBuffer();
