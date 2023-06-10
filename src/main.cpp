@@ -498,7 +498,6 @@ void displayRunning(){
   running = true;
 }
 
-// new style
 void displayMenuSettings() {
   u8g2.clearBuffer();
   
