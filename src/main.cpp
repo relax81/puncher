@@ -90,6 +90,7 @@ int returnCurrentLimit = 50; // current threshold to stop motor during return
 #define normalFont u8g2_font_t0_11b_mf
 #define settingsFont u8g2_font_NokiaSmallBold_tf
 #define selectFont u8g2_font_Born2bSportyV2_tf
+#define countdownFont u8g2_font_fub20_tf
 
 // menu
 int menuLevel = 1;
@@ -332,6 +333,17 @@ void newButtonNavigation() {
       } 
       if (btn_enter_short) {
         debugln("case 11 menu level 1");
+
+        // workaround - should be replaced with pointers or reference or so
+        strokeSpeed = menu[0].value;
+        returnSpeed = menu[1].value;
+        strokeCurrentLimit = menu[2].value;
+        returnCurrentLimit = menu[3].value;
+        pauseBetweenStrokes = menu[4].value;
+        startDelay = menu[5].value;
+        startStrokingCurrentMeasuringDelay = menu[6].value;
+        startReturningCurrentMeasuringDelay= menu[7].value;
+
         menuLevel = 1;
       }
       if (btn_left_short) {
@@ -382,7 +394,17 @@ void stroke() {
   }
 
 void strokeRoutine() {
-
+  // Display Countdown 
+  if ((startFirstSpankDelay == true) &&(millis() - previousMillis < startDelay * 1000)) {
+    u8g2.clearBuffer();
+    u8g2.setFont(countdownFont);
+    u8g2.setCursor(50,40);
+    int remainingSeconds = (previousMillis + startDelay * 1000 - millis()) / 1000;
+    if (remainingSeconds >= 0) {
+    u8g2.print(remainingSeconds);
+    }
+    u8g2.sendBuffer();
+  }
   if ((startFirstSpankDelay == true) && (millis() - previousMillis >= startDelay * 1000 )) {
     startFirstSpankDelay = false;
   }
@@ -489,12 +511,15 @@ void displayStart() {
 }
 
 void displayRunning(){
+  if (startFirstSpankDelay == false) {
   u8g2.clearBuffer();
   u8g2.setFont(normalFont);
   u8g2.drawStr(20,10,"Strokes Left");
-  u8g2.setCursor(50,35);
+  u8g2.setFont(countdownFont);
+  u8g2.setCursor(50,45);
   u8g2.print(amountOfStrokes);
   u8g2.sendBuffer();
+  }
   running = true;
 }
 
