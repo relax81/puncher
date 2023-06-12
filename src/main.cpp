@@ -67,8 +67,6 @@ BTS7960 motorController(EN_L, EN_R, L_PWM, R_PWM, L_IS, R_IS);
 unsigned long currentMillis = 0;
 unsigned long previousMillis = 0;
 unsigned long lastSpankMillis = 0;
-unsigned long startStrokingCurrentMeasuringDelay = 300; // milliseconds
-unsigned long startReturningCurrentMeasuringDelay = 300; // milliseconds
 
 bool motorStopped = false;
 bool stroking = false;
@@ -85,6 +83,8 @@ int strokeSpeed = 200; // speed of the stroke pwm 0-255
 int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
 int strokeCurrentLimit = 50; // current threshold to stop motor during stroke
 int returnCurrentLimit = 50; // current threshold to stop motor during return
+int startStrokingCurrentMeasuringDelay = 300; // milliseconds
+int startReturningCurrentMeasuringDelay = 300; // milliseconds
 
 // fonts
 #define normalFont u8g2_font_t0_11b_mf
@@ -105,20 +105,20 @@ int StartMenu_Selected = 1;
 
 //// settings menu array
 // Define the struct for menu items
-struct MenuItem {
+struct Settings {
   const char* name;
-  int value;
+  int * value;
 };
 // Define the menu array
-MenuItem menu[] = {
-  {"stroke Speed", strokeSpeed},
-  {"return Speed", returnSpeed},
-  {"stroke Limit", strokeCurrentLimit},
-  {"return Limit", returnCurrentLimit},
-  {"stroke pause", pauseBetweenStrokes},
-  {"start delay", startDelay},
-  {"stroke IS delay", startStrokingCurrentMeasuringDelay},
-  {"return IS delay", startReturningCurrentMeasuringDelay}
+Settings menu[] = {
+  {"stroke Speed", &strokeSpeed},
+  {"return Speed", &returnSpeed},
+  {"stroke Limit", &strokeCurrentLimit},
+  {"return Limit", &returnCurrentLimit},
+  {"stroke pause", &pauseBetweenStrokes},
+  {"start delay", &startDelay},
+  {"stroke IS delay", &startStrokingCurrentMeasuringDelay},
+  {"return IS delay", &startReturningCurrentMeasuringDelay}
 };
 // Total number of menu items
 const int menuSize = sizeof(menu) / sizeof(menu[0]);
@@ -333,33 +333,22 @@ void newButtonNavigation() {
       } 
       if (btn_enter_short) {
         debugln("case 11 menu level 1");
-
-        // workaround - should be replaced with pointers or reference or so
-        strokeSpeed = menu[0].value;
-        returnSpeed = menu[1].value;
-        strokeCurrentLimit = menu[2].value;
-        returnCurrentLimit = menu[3].value;
-        pauseBetweenStrokes = menu[4].value;
-        startDelay = menu[5].value;
-        startStrokingCurrentMeasuringDelay = menu[6].value;
-        startReturningCurrentMeasuringDelay= menu[7].value;
-
         menuLevel = 1;
       }
       if (btn_left_short) {
-        menu[currentMenuIndex].value--;
+        *menu[currentMenuIndex].value = *menu[currentMenuIndex].value - 1;
       }
 
       if (btn_left_long) {
-        menu[currentMenuIndex].value = menu[currentMenuIndex].value - 10;
+        *menu[currentMenuIndex].value = *menu[currentMenuIndex].value - 10;
       }
 
       if (btn_right_short) {
-        menu[currentMenuIndex].value++;
+        *menu[currentMenuIndex].value = *menu[currentMenuIndex].value + 1;
       }
 
       if (btn_right_long) {
-        menu[currentMenuIndex].value = menu[currentMenuIndex].value + 10;
+        *menu[currentMenuIndex].value = *menu[currentMenuIndex].value + 10;
       }
   }
 }
@@ -554,23 +543,23 @@ void displayMenuSettings() {
   // right column
   u8g2.setCursor(100,8);
   if (currentMenuIndex > 1) {
-  u8g2.print(menu[currentMenuIndex-2].value);
+  u8g2.print(*menu[currentMenuIndex-2].value);
   }
   u8g2.setCursor(100,18);
   if (currentMenuIndex > 0){
-  u8g2.print(menu[currentMenuIndex-1].value);
+  u8g2.print(*menu[currentMenuIndex-1].value);
   }
   u8g2.setFont(selectFont);
   u8g2.setCursor(100,33);
-  u8g2.print(menu[currentMenuIndex].value);
+  u8g2.print(*menu[currentMenuIndex].value);
   u8g2.setFont(settingsFont);
   u8g2.setCursor(100,48);
   if (currentMenuIndex < (menuSize - 1)) {
-  u8g2.print(menu[currentMenuIndex+1].value);
+  u8g2.print(*menu[currentMenuIndex+1].value);
   }
   u8g2.setCursor(100,58);
   if (currentMenuIndex < (menuSize - 2)){
-  u8g2.print(menu[currentMenuIndex+2].value);
+  u8g2.print(*menu[currentMenuIndex+2].value);
   }
 
   u8g2.sendBuffer();
