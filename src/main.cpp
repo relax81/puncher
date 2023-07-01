@@ -26,6 +26,7 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include "BTS7960.h"
+#include "display.h"
 
 // button pins
 #define btn_up 23
@@ -387,10 +388,9 @@ void strokeRoutine() {
   if ((startFirstSpankDelay == true) &&(millis() - previousMillis < startDelay * 1000)) {
     u8g2.clearBuffer();
     u8g2.setFont(countdownFont);
-    u8g2.setCursor(50,40);
     int remainingSeconds = (previousMillis + startDelay * 1000 - millis()) / 1000;
     if (remainingSeconds >= 0) {
-    u8g2.print(remainingSeconds);
+    dispVar(50,40,remainingSeconds);
     }
     u8g2.sendBuffer();
   }
@@ -477,8 +477,8 @@ void displayMenu() {
 void displayStart() {
   u8g2.clearBuffer();
   u8g2.setFont(normalFont);
-  u8g2.setCursor(55,14);
-  u8g2.print(amountOfStrokes);
+  dispVar(55,14,amountOfStrokes);
+  
   u8g2.drawStr(40,38,"<< back");
   u8g2.drawStr(40,58,"start >>");
 
@@ -503,10 +503,8 @@ void displayRunning(){
   if (startFirstSpankDelay == false) {
   u8g2.clearBuffer();
   u8g2.setFont(normalFont);
-  u8g2.drawStr(20,10,"Strokes Left");
+  u8g2.drawStr(28,10,"Strokes Left");
   u8g2.setFont(countdownFont);
-  u8g2.setCursor(50,45);
-  u8g2.print(amountOfStrokes);
   u8g2.sendBuffer();
   }
   running = true;
@@ -519,47 +517,37 @@ void displayMenuSettings() {
   u8g2.drawFrame(0,19,126,19);
   // left column
   u8g2.setFont(settingsFont);
-  u8g2.setCursor(2,8);
   if (currentMenuIndex > 1) {
-    u8g2.print(menu[currentMenuIndex-2].name);
+    dispVar(2,8,menu[currentMenuIndex-2].name);
     }
-  u8g2.setCursor(2,18);
   if (currentMenuIndex > 0){
-  u8g2.print(menu[currentMenuIndex-1].name);
+  dispVar(2,18,menu[currentMenuIndex-1].name);
   }
   u8g2.setFont(selectFont);
-  u8g2.setCursor(2,33);
-  u8g2.print(menu[currentMenuIndex].name);
+  dispVar(2,33,menu[currentMenuIndex].name);
   u8g2.setFont(settingsFont);
-  u8g2.setCursor(2,48);
   if (currentMenuIndex < (menuSize - 1)) {
-  u8g2.print(menu[currentMenuIndex+1].name);
+  dispVar(2,48,menu[currentMenuIndex+1].name);
   }
-  u8g2.setCursor(2,58);
   if (currentMenuIndex < (menuSize - 2)){
-  u8g2.print(menu[currentMenuIndex+2].name);
+  dispVar(2,58,menu[currentMenuIndex+2].name);
   }
   
   // right column
-  u8g2.setCursor(100,8);
   if (currentMenuIndex > 1) {
-  u8g2.print(*menu[currentMenuIndex-2].value);
+  dispVar(100,8,*menu[currentMenuIndex-2].value);
   }
-  u8g2.setCursor(100,18);
   if (currentMenuIndex > 0){
-  u8g2.print(*menu[currentMenuIndex-1].value);
+  dispVar(100,18,*menu[currentMenuIndex-1].value);
   }
   u8g2.setFont(selectFont);
-  u8g2.setCursor(100,33);
-  u8g2.print(*menu[currentMenuIndex].value);
+  dispVar(100,33,*menu[currentMenuIndex].value);
   u8g2.setFont(settingsFont);
-  u8g2.setCursor(100,48);
   if (currentMenuIndex < (menuSize - 1)) {
-  u8g2.print(*menu[currentMenuIndex+1].value);
+  dispVar(100,48,*menu[currentMenuIndex+1].value);
   }
-  u8g2.setCursor(100,58);
   if (currentMenuIndex < (menuSize - 2)){
-  u8g2.print(*menu[currentMenuIndex+2].value);
+  dispVar(100,58,*menu[currentMenuIndex+2].value);
   }
 
   u8g2.sendBuffer();
