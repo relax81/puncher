@@ -1,18 +1,3 @@
-////pinout notes
-//Button
-// up 23
-// enter 19
-// left 18
-// down 4
-// right 13
-
-//// BTS7960
-// sense pins 35
-// en_L 33
-// en_R 25
-// pwm_L 27
-// pwm_R 14
-
 // activate deactivate serial output for debugging
 #define DEBUG 1
 #if DEBUG == 1
@@ -24,16 +9,12 @@
 #endif
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include <U8g2lib.h>
 #include "BTS7960.h"
 #include "display.h"
-
-// button pins
-#define btn_up 23
-#define btn_enter 19
-#define btn_left 18
-#define btn_down 4
-#define btn_right 13
+#include "pin_def.h"
+#include "config_values.h"
 
 // new button routine
 bool btn_up_pressed = false;
@@ -55,54 +36,9 @@ bool btn_left_long = false;
 bool btn_right_short = false;
 bool btn_right_long = false;
 
+
 // BTS7960
-const uint8_t EN_L = 33;
-const uint8_t EN_R = 25;
-const uint8_t L_PWM = 27;
-const uint8_t R_PWM = 14;
-const uint8_t R_IS = 35; // unused - parallel with 35 
-const uint8_t L_IS = 35;
 BTS7960 motorController(EN_L, EN_R, L_PWM, R_PWM, L_IS, R_IS);
-
-// variables
-unsigned long currentMillis = 0;
-unsigned long previousMillis = 0;
-unsigned long lastSpankMillis = 0;
-
-bool motorStopped = false;
-bool stroking = false;
-bool returning = false;
-bool running = false;
-bool startFirstSpankDelay = false;
-int reading = 0; // current reading
-int currentSum = 0; // sum of current readings
-float averageCurrent = 0;
-int startDelay = 5; // start delay in seconds
-int pauseBetweenStrokes = 20; // delay between strokes in seconds
-int amountOfStrokes = 1; // number of strokes
-int strokeSpeed = 200; // speed of the stroke pwm 0-255
-int returnSpeed = 50; // speed when resetting the motor position pwm 0-255
-int strokeCurrentLimit = 50; // current threshold to stop motor during stroke
-int returnCurrentLimit = 50; // current threshold to stop motor during return
-int startStrokingCurrentMeasuringDelay = 300; // milliseconds
-int startReturningCurrentMeasuringDelay = 300; // milliseconds
-
-// fonts
-#define normalFont u8g2_font_t0_11b_mf
-#define settingsFont u8g2_font_NokiaSmallBold_tf
-#define selectFont u8g2_font_Born2bSportyV2_tf
-#define countdownFont u8g2_font_fub20_tf
-
-// menu
-int menuLevel = 1;
-int currentMenuIndex = 3;
-const int MainMenuNumItems = 3; // number of items in the list 
-const int MainMenuMaxItemLength = 20; // maximum characters for the item name
-char MainMenuItems [MainMenuNumItems] [MainMenuMaxItemLength] = {"Start","Settings","Info"};
-int MainMenu_Selected = 1;
-int MainMenu_Previous;
-int MainMenu_Next;
-int StartMenu_Selected = 1;
 
 //// settings menu array
 // Define the struct for menu items
@@ -127,6 +63,11 @@ const int menuSize = sizeof(menu) / sizeof(menu[0]);
 void strokeRoutine();
 void stroke();
 void returnMotor();
+void loadSettings();
+void saveSettings();
+
+// Preferences // save settings
+Preferences preferences;
 
 
 // Display Type
@@ -334,6 +275,7 @@ void newButtonNavigation() {
       } 
       if (btn_enter_short) {
         debugln("case 11 menu level 1");
+        saveSettings();
         menuLevel = 1;
       }
       if (btn_left_short) {
@@ -412,45 +354,6 @@ void strokeRoutine() {
     running = false;
     menuLevel = 1;
   }
-
-
-
-  // int currentSum = 0;
-  // if ((motorStopped == false) && (amountOfStrokes > 0)) {
-  //   motorController.TurnLeft(strokeSpeed);
-  //   amountOfStrokes--;
-  //   delay(200);
-  //   }
-  // else if (motorStopped == true)
-  //   {
-  //     motorController.Stop();
-  //     delay(100);
-  //     motorController.Enable();
-  //     motorController.TurnRight(returnSpeed);
-  //     debugln("motorcontroler right turn enabled");
-  //     delay(3000);
-  //     motorController.Stop();
-  //     debugln("motorcontroller right turn stopped");
-  //     delay(5000);
-  //     motorStopped = false;
-  //   }
-
-  // // take 10 readings and add them up
-  // for (int i = 0; i < 2; i++) {
-  //   reading = motorController.CurrentSenseLeft();
-  //   currentSum += reading;
-  //   }
-  // // calculate the average
-  // averageCurrent = (float) currentSum / 2;
-
-  // // int reading = analogRead(L_IS);
-
-  // if (averageCurrent > 500 && motorStopped == false)
-  //   {
-  //     motorStopped = true;
-  //     debugln("current sense triggered !!!!!!!!!!!!!!");
-  //   }
-
 
   debugln(motorController.CurrentSenseLeft());
   delay(100);
@@ -553,6 +456,31 @@ void displayMenuSettings() {
   u8g2.sendBuffer();
 }
 
+//loadSettings
+void loadSettings(){
+    startDelay = preferences.getInt("s_StartDelay", 5);
+    pauseBetweenStrokes = preferences.getInt("s_PauseBeSt", 20);
+    strokeSpeed = preferences.getInt("s_StrSpeed", 200);
+    returnSpeed = preferences.getInt("s_RetSpeed", 50);
+    strokeCurrentLimit = preferences.getInt("s_StrCurLim", 50);
+    returnCurrentLimit = preferences.getInt("s_RetCurLim", 50);
+    startStrokingCurrentMeasuringDelay = preferences.getInt("s_StaStrCurMea", 300);
+    startReturningCurrentMeasuringDelay = preferences.getInt("s_StaRetCurMea", 300);
+} 
+
+//saveSettings
+void saveSettings(){
+    preferences.putInt("s_StartDelay", startDelay);
+    preferences.putInt("s_PauseBeSt", pauseBetweenStrokes);
+    preferences.putInt("s_StrSpeed", strokeSpeed);
+    preferences.putInt("s_RetSpeed", returnSpeed);
+    preferences.putInt("s_StrCurLim", strokeCurrentLimit);
+    preferences.putInt("s_RetCurLim", returnCurrentLimit);
+    preferences.putInt("s_StaStrCurMea", startStrokingCurrentMeasuringDelay);
+    preferences.putInt("s_StaRetCurMea", startReturningCurrentMeasuringDelay);
+    preferences.end();
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -563,6 +491,8 @@ void setup() {
   pinMode(btn_left, INPUT);
   pinMode(btn_right, INPUT);
 
+  preferences.begin("savedSettings", false);
+  loadSettings();
   u8g2.begin();
   u8g2.clearBuffer();
   u8g2.setFont(normalFont);
