@@ -408,6 +408,7 @@ void displayRunning(){
   u8g2.setFont(normalFont);
   u8g2.drawStr(28,10,"Strokes Left");
   u8g2.setFont(countdownFont);
+  dispVar(50,45,amountOfStrokes);
   u8g2.sendBuffer();
   }
   running = true;
